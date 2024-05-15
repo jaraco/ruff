@@ -1324,7 +1324,7 @@ impl<'src> Lexer<'src> {
         std::mem::take(&mut self.value)
     }
 
-    /// Creates a checkpoint to which it can later return to using [`Self::rewind`].
+    /// Creates a checkpoint to which the lexer can later return to using [`Self::rewind`].
     pub(crate) fn checkpoint(&self) -> LexerCheckpoint<'src> {
         LexerCheckpoint {
             value: self.value.clone(),
@@ -1335,6 +1335,7 @@ impl<'src> Lexer<'src> {
             indentations_checkpoint: self.indentations.checkpoint(),
             pending_indentation: self.pending_indentation,
             fstrings_checkpoint: self.fstrings.checkpoint(),
+            errors_position: self.errors.len(),
         }
     }
 
@@ -1353,6 +1354,7 @@ impl<'src> Lexer<'src> {
         self.indentations.rewind(checkpoint.indentations_checkpoint);
         self.pending_indentation = checkpoint.pending_indentation;
         self.fstrings.rewind(checkpoint.fstrings_checkpoint);
+        self.errors.truncate(checkpoint.errors_position);
     }
 
     pub fn finish(self) -> Vec<LexicalError> {
@@ -1571,6 +1573,7 @@ pub(crate) struct LexerCheckpoint<'src> {
     indentations_checkpoint: IndentationsCheckpoint,
     pending_indentation: Option<Indentation>,
     fstrings_checkpoint: FStringsCheckpoint,
+    errors_position: usize,
 }
 
 #[derive(Copy, Clone, Debug)]
