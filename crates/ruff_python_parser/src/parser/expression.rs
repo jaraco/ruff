@@ -469,25 +469,37 @@ impl<'src> Parser<'src> {
             };
         }
 
-        let soft_keyword = match self.current_token_kind() {
-            TokenKind::Match => "match",
-            TokenKind::Case => "case",
-            TokenKind::Type => "type",
-            _ => {
-                self.add_error(
-                    ParseErrorType::OtherError("Expected an identifier".into()),
-                    range,
-                );
-                return ast::Identifier {
-                    id: String::new(),
-                    range: self.missing_node_range(),
-                };
-            }
-        };
+        if self.current_token_kind().is_soft_keyword() {
+            return ast::Identifier {
+                id: self.current_token_kind().to_string(),
+                range: self.current_token_range(),
+            };
+        }
 
-        ast::Identifier {
-            id: soft_keyword.to_string(),
-            range,
+        if self.current_token_kind().is_keyword() {
+            // Non-soft keyword
+            self.add_error(
+                ParseErrorType::OtherError(format!(
+                    "Expected an identifier, but found a keyword '{}' that cannot be used here",
+                    self.current_token_kind()
+                )),
+                range,
+            );
+
+            ast::Identifier {
+                id: self.current_token_kind().to_string(),
+                range: self.current_token_range(),
+            }
+        } else {
+            self.add_error(
+                ParseErrorType::OtherError("Expected an identifier".into()),
+                range,
+            );
+
+            ast::Identifier {
+                id: String::new(),
+                range: self.missing_node_range(),
+            }
         }
     }
 
